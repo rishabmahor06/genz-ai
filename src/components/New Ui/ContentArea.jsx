@@ -58,7 +58,7 @@ const ContentArea = () => {
     if (!listening && transcript) {
       const sendAudio = async () => {
         try {
-          const response = await axios.post("http://localhost:3000/audio", {
+          const response = await axios.post(`${import.meta.env.BACKEND_URL}`/audio, {
             audioText: transcript,
           });
           setAudio(response.data.audio);
@@ -82,7 +82,7 @@ const ContentArea = () => {
     setMessages((prev) => [...prev, userMsg]);
 
     try {
-      const response = await axios.post("http://localhost:3000/gemini", {
+      const response = await axios.post(`${import.meta.env.BACKEND_URL}/gemini`, {
         item,
       });
       const aiMsg = { from: "assistant", text: response.data.message };
@@ -132,7 +132,7 @@ const ContentArea = () => {
     if (!fileImage) return;
     setLoading(true);
     try {
-      const res = await axios.post("http://localhost:3000/gemini-image", {
+      const res = await axios.post(`${import.meta.env.BACKEND_URL}/gemini-image`, {
         item,
         fileImage,
       });
