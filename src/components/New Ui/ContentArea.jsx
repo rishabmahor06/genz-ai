@@ -1,8 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import axios from "axios";
-import SpeechRecognition, {
-  useSpeechRecognition,
-} from "react-speech-recognition";
+import SpeechRecognition, { useSpeechRecognition } from "react-speech-recognition";
 import { BeatLoader } from "react-spinners";
 import {
   EllipsisVertical,
@@ -11,73 +9,67 @@ import {
   Send,
   AudioLines,
   Paperclip,
-  FileChartColumn,
   Trash2,
   Plus,
   Image,
 } from "lucide-react";
 import { IoText } from "react-icons/io5";
 
-
 const ContentArea = () => {
   const chatRef = useRef(null);
   const historyRef = useRef(null);
+
   const [chatScrolled, setChatScrolled] = useState(false);
   const [item, setItem] = useState("");
   const [fileImage, setFileImage] = useState("");
   const [showFileInput, setShowFileInput] = useState(false);
-  const [messages, setMessages] = useState([
-    // {
-    //   from: "assistant",
-    //   text: `Artificial Intelligence (AI) refers to intelligent computer systems that can learn, reason, and perform tasks that typically require human intelligence.`,
-    // },
-    // { from: "user", text: "What can an Artificial Intelligence do?" },
-    // { from: "user", image:  fileImage  },
-  ]);
+  const [messages, setMessages] = useState([]);
   const [audio, setAudio] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // Speech recognition
   const { transcript, listening, browserSupportsSpeechRecognition } =
     useSpeechRecognition();
+
   if (!browserSupportsSpeechRecognition) {
     return <span>Browser doesn't support speech recognition.</span>;
   }
 
-  // Detect chat scroll for blur
   useEffect(() => {
     const el = chatRef.current;
     if (!el) return;
+
     const onScroll = () => setChatScrolled(el.scrollTop > 8);
     el.addEventListener("scroll", onScroll);
     return () => el.removeEventListener("scroll", onScroll);
   }, []);
 
-  // 🎙️ Handle audio input from microphone
   useEffect(() => {
     if (!listening && transcript) {
       const sendAudio = async () => {
         try {
-          const response = await axios.post(`${import.meta.env.BACKEND_URL}`/audio, {
-            audioText: transcript,
-          });
+          const response = await axios.post(
+            `${import.meta.env.BACKEND_URL}/audio`,
+            { audioText: transcript }
+          );
+
           setAudio(response.data.audio);
+
           const newMsg = { from: "user", text: transcript };
           setMessages((prev) => [...prev, newMsg]);
         } catch (error) {
           console.error("Audio error:", error);
         }
       };
+
       sendAudio();
     }
-  }, [listening]);
+  }, [listening, transcript]);
 
-  //  Send text message
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!item.trim()) return;
-    setLoading(true);
 
+    setLoading(true);
     const userMsg = { from: "user", text: item };
     setMessages((prev) => [...prev, userMsg]);
 
@@ -85,6 +77,7 @@ const ContentArea = () => {
       const response = await axios.post(`${import.meta.env.BACKEND_URL}/gemini`, {
         item,
       });
+
       const aiMsg = { from: "assistant", text: response.data.message };
       setMessages((prev) => [...prev, aiMsg]);
     } catch (error) {
@@ -93,20 +86,14 @@ const ContentArea = () => {
 
     setItem("");
     setLoading(false);
-
-    setTimeout(() => {
-      chatRef.current?.scrollTo({
-        top: chatRef.current.scrollHeight,
-        behavior: "smooth",
-      });
-    }, 200);
   };
 
-  //  Upload image to Cloudinary
   const handleUpload = async () => {
     if (!fileImage) return;
+
     const data = new FormData();
     setLoading(true);
+
     data.append("file", fileImage);
     data.append("upload_preset", "GEMINIRISHAB");
     data.append("cloud_name", "dbfqvsrls");
@@ -116,10 +103,13 @@ const ContentArea = () => {
         "https://api.cloudinary.com/v1_1/dbfqvsrls/image/upload",
         data
       );
+
       const url = res.data.secure_url;
-      setFileImage(url);
-      const imgMsg = { from: "user", text: `Uploaded image: ${url}` };
+
+      const imgMsg = { from: "user", image: url };
       setMessages((prev) => [...prev, imgMsg]);
+
+      setFileImage(url);
     } catch (err) {
       console.error("Image upload error:", err);
     } finally {
@@ -127,15 +117,16 @@ const ContentArea = () => {
     }
   };
 
-  // 🖼️ Gemini image generation
   const handleImage = async () => {
     if (!fileImage) return;
     setLoading(true);
+
     try {
       const res = await axios.post(`${import.meta.env.BACKEND_URL}/gemini-image`, {
         item,
         fileImage,
       });
+
       const imgResponse = { from: "assistant", text: res.data.message };
       setMessages((prev) => [...prev, imgResponse]);
     } catch (err) {
@@ -145,7 +136,6 @@ const ContentArea = () => {
     }
   };
 
-  // 🔘 Enter to send
   const handleKeyDown = (e) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
@@ -154,9 +144,10 @@ const ContentArea = () => {
   };
 
   return (
-    <div className="h-[587px]  flex justify-center items-start">
-      <div className=" rounded-2xl flex gap-4 justify-between">
-        {/* Sidebar icons */}
+    <div className="w-full px-2 md:px-6 flex justify-center items-start pb-3.5">
+      <div className="w-full max-w-[1600px] flex flex-col lg:flex-row gap-4">
+
+        {/* LEFT ICONS */}
         <div className="flex flex-col justify-center items-center gap-4">
           <div className="group z-50 flex flex-col cursor-pointer">
             {" "}
@@ -174,37 +165,38 @@ const ContentArea = () => {
               New Chat{" "}
             </span>{" "}
           </div>
-        </div>
+        </div> 
 
-        {/* Chat section */}
-        <div className="w-[1200px] flex flex-col rounded-xl overflow-hidden bg-white/30 backdrop-blur-md">
-          {/* Header */}
+        {/* CHAT WINDOW */}
+        <div className="flex-1 max-w-8xl bg-white/30 backdrop-blur-md rounded-xl overflow-hidden shadow">
+
+          {/* HEADER */}
           <div
-            className={`sticky top-0 z-30 transition-all duration-300 ${
+            className={`sticky top-0 z-20 px-6 py-3 transition ${
               chatScrolled
-                ? "bg-white/60 backdrop-blur-md shadow"
+                ? "bg-white/80 backdrop-blur-md shadow"
                 : "bg-white/20 backdrop-blur-sm"
             }`}
           >
-            <div className="flex items-center justify-between px-6 py-3">
+            <div className="flex justify-between items-center">
               <h3 className="text-lg font-semibold">Super Chat</h3>
-              <button className="bg-white/60 p-2 rounded-full">
-                <EllipsisVertical className="w-5 h-5 text-black" />
+              <button className="p-2 rounded-full bg-white/70">
+                <EllipsisVertical className="w-5 h-5" />
               </button>
             </div>
           </div>
 
-          {/* Messages */}
+          {/* MESSAGES */}
           <div
             ref={chatRef}
-            className="flex-1 px-6 py-4 overflow-y-auto space-y-4 no-scrollbar"
+            className="h-[65vh] md:h-[54vh] px-6 py-4 overflow-y-auto space-y-4 no-scrollbar"
           >
             {messages.map((msg, i) => (
               <div
                 key={i}
                 className={`p-4 rounded-2xl shadow-sm max-w-[85%] ${
                   msg.from === "user"
-                    ? "bg-blue-100 self-end ml-auto"
+                    ? "bg-blue-100 ml-auto"
                     : "bg-white/70 backdrop-blur-sm"
                 }`}
               >
@@ -224,7 +216,7 @@ const ContentArea = () => {
                       <img
                         src={msg.image}
                         alt="Uploaded"
-                        className="mt-2 rounded-lg max-w-[250px] object-cover"
+                        className="mt-2 rounded-lg max-w-[250px]"
                       />
                     )}
                   </div>
@@ -233,37 +225,40 @@ const ContentArea = () => {
             ))}
 
             {loading && (
-              <div className="flex justify-center items-center py-4">
-                <BeatLoader color="#000" size={10} />
+              <div className="flex justify-center py-4">
+                <BeatLoader size={10} />
               </div>
             )}
           </div>
 
-          {/* Input */}
-          <div className="px-6 py-2 ">
-            <div className="rounded-2xl p-3 flex flex-col gap-3 shadow-sm">
+          {/* INPUT BOX */}
+          <div className="px-6 py-2">
+            <div className="rounded-2xl p-3 bg-white shadow flex flex-col gap-3">
               <textarea
                 rows="1"
                 placeholder="Ask or search anything..."
-                className="w-full h-12 px-3 rounded-lg focus:outline-none bg-gray-100 resize-none"
+                className="w-full h-12 px-3 rounded-lg bg-gray-100 resize-none focus:outline-none"
                 value={item}
                 onChange={(e) => setItem(e.target.value)}
                 onKeyDown={handleKeyDown}
               />
-              <div className="flex items-center justify-between">
-                <div className="flex gap-3">
-                  <button className="flex items-center gap-2  bg-gray-200 px-2 py-1 rounded-full text-sm cursor-pointer">
-                    <IoText  className="w-6 h-6 bg-white p-1 rounded-full" />{" "}
+
+              <div className="flex flex-wrap justify-between items-center gap-3">
+
+                <div className="flex flex-wrap gap-3">
+                  <button className="flex items-center gap-2 bg-gray-200 px-3 py-1 rounded-full text-sm whitespace-nowrap">
+                    <IoText className="w-6 h-6 bg-white p-1 rounded-full" />
                     text to voice
                     <AudioLines className="w-6 h-6 bg-white p-1 rounded-full" />
                   </button>
+
                   <button
                     onClick={
                       !listening
                         ? SpeechRecognition.startListening
                         : SpeechRecognition.stopListening
                     }
-                    className="flex items-center gap-2 bg-gray-200 px-2 py-1 rounded-full text-sm cursor-pointer"
+                    className="flex items-center gap-2 bg-gray-200 px-3 py-1 rounded-full text-sm whitespace-nowrap"
                   >
                     <AudioLines className="w-6 h-6 bg-white p-1 rounded-full" />
                     {listening ? "Listening..." : "No Brand Voice"}
@@ -273,59 +268,58 @@ const ContentArea = () => {
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => setShowFileInput(!showFileInput)}
-                    className="bg-gray-100 p-2 rounded-lg cursor-pointer"
+                    className="bg-gray-100 p-2 rounded-lg hover:bg-gray-200"
                   >
                     <Paperclip className="w-4 h-4 text-gray-700" />
                   </button>
 
                   {showFileInput && (
-                    <div className="flex items-center gap-2 bg-gray-100 p-2 rounded-lg absolute bottom-20 right-20">
+                    <div className="absolute bottom-24 right-6 md:right-28 bg-white p-3 rounded-xl shadow flex gap-3">
                       <input
                         type="file"
-                        className="w-40"
                         onChange={(e) => setFileImage(e.target.files[0])}
                       />
                       <button
                         onClick={handleUpload}
-                        className="bg-gray-400 text-white px-2 py-1 rounded-lg cursor-pointer"
+                        className="bg-gray-700 text-white px-3 py-1 rounded-lg"
                       >
                         Upload
                       </button>
                     </div>
                   )}
 
-                  <button
-                    onClick={handleImage}
-                    className="bg-gray-100 p-2 rounded-lg cursor-pointer"
-                  >
+                  <button onClick={handleImage} className="bg-gray-100 p-2 rounded-lg hover:bg-gray-200">
                     <Image className="w-4 h-4 text-gray-700" />
                   </button>
 
                   <button
                     onClick={handleSubmit}
-                    className="bg-black text-white px-4 py-2 rounded-lg cursor-pointer"
+                    className="bg-black text-white px-4 py-2 rounded-lg hover:bg-black/80"
                   >
                     <Send className="w-4 h-4" />
                   </button>
                 </div>
+
               </div>
             </div>
           </div>
         </div>
 
-        {/* Right panel */}
-        <div className="w-96 flex flex-col gap-4">
-          {/* History */}
-          <div className="rounded-2xl bg-white/30 backdrop-blur-md p-4 h-[50%] flex flex-col">
-            <div className="sticky top-0 flex items-center justify-between pb-3">
-              <h4 className="font-medium text-lg">History Chat</h4>
+        {/* RIGHT SIDE PANEL */}
+        <div className="w-full lg:w-80 flex flex-col gap-4">
+
+          {/* HISTORY */}
+          <div className="bg-white/30 backdrop-blur-md rounded-xl p-4 h-[45vh] flex flex-col">
+            <div className="flex justify-between items-center">
+              <h4 className="text-lg font-medium">History Chat</h4>
               <button className="bg-white/60 p-2 rounded-full">
                 <PanelLeft className="w-5 h-5" />
               </button>
             </div>
+
             <div
               ref={historyRef}
-              className="mt-2 overflow-y-auto space-y-3 no-scrollbar"
+              className="mt-3 overflow-y-auto space-y-3 no-scrollbar"
             >
               {[
                 "Write a persuasive email to convince customers",
@@ -333,10 +327,7 @@ const ContentArea = () => {
                 "Generate a 30-sec ad script",
                 "Tell me what is AI?",
               ].map((t, i) => (
-                <div
-                  key={i}
-                  className="bg-white rounded-xl p-3 flex gap-3 items-center"
-                >
+                <div key={i} className="bg-white p-3 rounded-xl flex gap-3 items-center">
                   <MessagesSquare className="w-6 h-6 text-gray-600" />
                   <p className="text-sm text-gray-700">{t}</p>
                 </div>
@@ -344,38 +335,52 @@ const ContentArea = () => {
             </div>
           </div>
 
-          {/* Pro plan */}
-          <div className="h-[50%] rounded-2xl bg-gradient-to-b from-green-300 to-green-400 p-4 text-white shadow-lg">
-            <div className="flex flex-col items-center gap-3">
-              <div className="w-full flex justify-between items-center">
-                <img
-                  className="w-14 rounded-full"
-                  src="https://i.pinimg.com/736x/eb/76/a4/eb76a46ab920d056b02d203ca95e9a22.jpg"
-                  alt="Logo"
-                />
-                <h3 className="text-3xl font-medium">Pro Plan</h3>
-              </div>
-              <div className="flex flex-col">
-                <h3 className="text-xl font-bold">
-                  $126.54<span className="text-sm font-light">/month</span>
-                </h3>
-                <p className="text-lg opacity-90 mt-1">
-                  Get various other interesting features
-                </p>
-              </div>
+          {/* PRO PLAN */}
+          <div className="bg-gradient-to-b from-green-300 to-green-400 rounded-xl p-5 text-white">
+            <div className="flex gap-3 items-center">
+              <img
+                className="w-14 rounded-full"
+                src="https://i.pinimg.com/736x/eb/76/a4/eb76a46ab920d056b02d203ca95e9a22.jpg"
+                alt="Logo"
+              />
+              <h3 className="text-3xl font-semibold">Pro Plan</h3>
             </div>
-            <div className="mt-4">
-              <button className="w-full bg-black text-white py-2 rounded-full">
-                Get Pro Plan Now
-              </button>
+
+            <div className="mt-3">
+              <h3 className="text-2xl font-bold">
+                $126.54 <span className="text-sm font-light">/month</span>
+              </h3>
+              <p className="text-lg opacity-90 mt-1">
+                Get various other interesting features
+              </p>
             </div>
+
+            <button className="mt-4 w-full bg-black py-2 rounded-full text-white">
+              Get Pro Plan Now
+            </button>
           </div>
         </div>
       </div>
 
       <style>{`
         .no-scrollbar::-webkit-scrollbar { display: none; }
-        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .no-scrollbar { scrollbar-width: none; }
+        .tooltip {
+          position: absolute;
+          left: 12px;
+          top: 50%;
+          transform: translate(40px, -50%);
+          padding: 6px 12px;
+          background: black;
+          color: white;
+          border-radius: 20px;
+          opacity: 0;
+          white-space: nowrap;
+          transition: 0.2s;
+        }
+        .group:hover .tooltip {
+          opacity: 1;
+        }
       `}</style>
     </div>
   );
