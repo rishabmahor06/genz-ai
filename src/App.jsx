@@ -1,7 +1,6 @@
 import React from "react";
 import Mic from "./Mic";
 import { Routes, Route } from "react-router-dom";
-import NewUi from "./components/New Ui/NewUi";
 import Home from "./components/chatgpt/Home";
 
 const App = () => {
@@ -9,8 +8,8 @@ const App = () => {
     <div>
       <Routes>
        
-        <Route path="/" element={<NewUi />} />
-        <Route path="/new" element={<Home />} />
+        
+        <Route path="/" element={<Home />} />
       </Routes>
     </div>
   );
