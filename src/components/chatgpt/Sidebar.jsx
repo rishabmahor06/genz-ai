@@ -1,5 +1,5 @@
 import React from "react";
-import { ChevronDown, Search, Plus } from "lucide-react";
+import { ChevronDown, Search, Plus, X } from "lucide-react";
 
 export default function Sidebar({
   open = false,
@@ -12,7 +12,11 @@ export default function Sidebar({
 }) {
   return (
     <aside
-      className={`w-72 max-h-screen hidden lg:flex flex-col bg-[color:var(--panel)] p-5 gap-4 shadow-glass-sm`}
+      className={`w-72 max-h-screen flex-col bg-[color:var(--panel)] p-5 gap-4 shadow-glass-sm
+    fixed top-0 left-0 h-full z-50 transform transition-transform duration-300
+    ${open ? "translate-x-0" : "-translate-x-full"} 
+    lg:static lg:translate-x-0 lg:flex
+  `}
       aria-hidden={!open}
     >
       {/* TOP BRAND AREA */}
@@ -29,6 +33,7 @@ export default function Sidebar({
         <div className="ml-auto">
           <ChevronDown size={18} className="text-[color:var(--muted)]" />
         </div>
+        <div onClick={onClose}><X /></div>
       </div>
 
       {/* SEARCH BAR */}
