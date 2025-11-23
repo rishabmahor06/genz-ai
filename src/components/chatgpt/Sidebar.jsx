@@ -12,13 +12,13 @@ export default function Sidebar({
 }) {
   return (
     <aside
-      className={`w-72 max-h-screen flex-col bg-[color:var(--panel)] p-5 gap-4 shadow-glass-sm
-    fixed top-0 left-0 h-full z-50 transform transition-transform duration-300
-    ${open ? "translate-x-0" : "-translate-x-full"} 
-    lg:static lg:translate-x-0 lg:flex
+  className={`
+    w-72 h-screen flex flex-col bg-[color:var(--panel)] p-5 gap-4 shadow-glass-sm
+    fixed top-0 left-0 z-50 transform transition-transform duration-300
+    ${open ? "translate-x-0" : "-translate-x-full"}
+    lg:static lg:translate-x-0
   `}
-      aria-hidden={!open}
-    >
+>
       {/* TOP BRAND AREA */}
       <div className="flex items-center gap-3">
         <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-emerald-400 via-blue-500 to-purple-600 flex items-center justify-center text-black font-bold">
@@ -33,7 +33,7 @@ export default function Sidebar({
         <div className="ml-auto">
           <ChevronDown size={18} className="text-[color:var(--muted)]" />
         </div>
-        <div onClick={onClose}><X /></div>
+        <div onClick={onClose} className="lg:hidden md:block sm:block"><X /></div>
       </div>
 
       {/* SEARCH BAR */}
