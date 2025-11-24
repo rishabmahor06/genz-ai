@@ -453,8 +453,16 @@ export default function App() {
                           )}
                         </div>
                       ))}
+                      {waitingAudioResponse && (
+                        <div className="flex justify-center py-4 items-center">
+                          <BeatLoader size={10} />
+                          <span className="ml-3 text-sm text-gray-400">
+                            Processing voice...
+                          </span>
+                        </div>
+                      )}
                       {loading && (
-                        <div className="flex justify-center py-4">
+                        <div className="flex justify-center py-4 ">
                           <BeatLoader size={8} />
                         </div>
                       )}
