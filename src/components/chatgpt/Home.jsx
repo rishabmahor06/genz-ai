@@ -4,25 +4,19 @@ import Sidebar from "./Sidebar";
 import Topbar from "./Topbar";
 import Card from "./Card";
 import axios from "axios";
+import { IoMdCloseCircle } from "react-icons/io";
+import { FaPlay, FaPause } from "react-icons/fa";
 import SpeechRecognition, {
   useSpeechRecognition,
 } from "react-speech-recognition";
 import { BeatLoader } from "react-spinners";
 import { AudioLines, Paperclip } from "lucide-react";
 
-/**
- * This keeps the second-file UI but adds the full functionality from the first component:
- * - speech recognition (send transcript to /audio)
- * - send text to /gemini
- * - send text+image to /gemini-image (uploads to Cloudinary if File)
- * - audio playback + autoplay handling
- * - parsing AI responses for code fences
- * - localStorage persistence for chatMessages & historyMessages
- * - image preview + download/share modal
- */
-
 export default function App() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [waitingAudioResponse, setWaitingAudioResponse] = useState(false);
+  const [uploadPreviewLoading, setUploadPreviewLoading] = useState(false);
 
   const [expandedIndex, setExpandedIndex] = useState(null);
 
@@ -55,17 +49,16 @@ export default function App() {
   useEffect(() => {
     if (!listening && transcript) {
       (async () => {
+        setWaitingAudioResponse(true);
+
         try {
-          // add user message locally
-          const userMsg = { from: "user", text: transcript };
-          pushMessage(userMsg);
+          pushMessage({ from: "user", text: transcript });
 
           const res = await axios.post(
             `${import.meta.env.VITE_BACKEND_URL}/audio`,
             { audioText: transcript }
           );
 
-          // If backend returns audio, set and add assistant audio message
           if (res.data?.audio) {
             setAudio(res.data.audio);
             pushMessage({
@@ -75,17 +68,19 @@ export default function App() {
             });
           } else if (res.data?.message) {
             const parsed = parseAIResponse(res.data.message);
-            const aiMsg = parsed.code
-              ? { from: "assistant", text: parsed.text, code: parsed.code }
-              : { from: "assistant", text: parsed.text };
-            pushMessage(aiMsg);
+            pushMessage({
+              from: "assistant",
+              text: parsed.text,
+              code: parsed.code || null,
+            });
           }
         } catch (err) {
           console.error("Speech -> backend error:", err);
+        } finally {
+          setWaitingAudioResponse(false);
         }
       })();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [listening, transcript]);
 
   // autoplay handling when `audio` url changes
@@ -200,11 +195,14 @@ export default function App() {
           console.error("Image submit error:", err);
         } finally {
           setLoading(false);
-          setFileImage("");
+          // setFileImage("");
         }
       }
       // CASE B: fileImage is already a URL (previously uploaded)
       else if (fileImage && typeof fileImage === "string") {
+        if (fileImage) {
+          pushMessage({ from: "user", image: fileImage });
+        }
         try {
           const res = await axios.post(
             `${import.meta.env.VITE_BACKEND_URL}/gemini-image`,
@@ -279,6 +277,7 @@ export default function App() {
     }
 
     setItem("");
+    setPreviewUrl("");
     setLoading(false);
   };
 
@@ -286,17 +285,22 @@ export default function App() {
   const handleUploadClick = async () => {
     if (!fileImage || !(fileImage instanceof File))
       return alert("Select an image first");
-    setLoading(true);
+
+    setUploadingImage(true); // START LOADER
+
     try {
       const url = await uploadToCloudinary(fileImage);
+
+      // show image on user side instantly
+      pushMessage({ from: "user", image: url });
+
       setFileImage(url);
       setPreviewUrl(url);
-      pushMessage({ from: "user", image: url });
     } catch (err) {
       console.error("Image upload error:", err);
       alert("Image upload failed. See console.");
     } finally {
-      setLoading(false);
+      setUploadingImage(false); // STOP LOADER
     }
   };
 
@@ -335,8 +339,8 @@ export default function App() {
   const handleNewChat = () => {
     setMessages([]);
     setItem("");
-    setFileImage("");
-    setPreviewUrl("");
+    // setFileImage("");
+    // setPreviewUrl("");
     try {
       localStorage.removeItem("chatMessages");
       localStorage.removeItem("fileImage");
@@ -373,12 +377,12 @@ export default function App() {
   };
 
   const handleGoHome = () => {
-    setMessages([]); // clear chat messages
-    setItem(""); // clear input
-    setFileImage(""); // remove selected image
-    setPreviewUrl(""); // remove preview
-    setExpandedIndex(null); // collapse history
-    setModalOpen(false); // close modal if open
+    setMessages([]);
+    setItem("");
+    setFileImage("");
+    setPreviewUrl("");
+    setExpandedIndex(null);
+    setModalOpen(false);
 
     localStorage.removeItem("chatMessages");
     localStorage.removeItem("fileImage");
@@ -386,7 +390,7 @@ export default function App() {
 
   // UI: keep second-file structure, but wire up handlers & preview/modal
   return (
-    <div className="max-h-screen flex bg-[rgba(22,22,23,1)] min-h-screen">
+    <div className="max-h-screen flex bg-[rgba(22,22,23,1)] min-h-screen ">
       <Sidebar
         open={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
@@ -400,9 +404,9 @@ export default function App() {
         <Topbar onMenu={() => setSidebarOpen((s) => !s)} />
         <main className="flex-1 flex flex-col overflow-hidden">
           {/* Scrollable Chat Content */}
-          <div className="flex-1 overflow-y-auto px-4 py-3">
-            <section className="max-w-5xl mx-auto">
-              <div className="rounded-2xl p-6 shadow-glass-lg">
+          <div className="flex-1 overflow-y-auto px-4 py-0">
+            <section className="max-w-5xl mx-auto ">
+              <div className="rounded-2xl sm:p-6 shadow-glass-lg sm: ">
                 <div className="flex flex-col items-center text-center gap-6">
                   {/* Minimal display of messages */}
                   <div className="w-full rounded-lg max-h-[110vh] overflow-y-auto">
@@ -427,7 +431,8 @@ export default function App() {
                             <img
                               src={m.image}
                               alt="msg"
-                              className="max-w-xs rounded mt-2 cursor-pointer"
+                              className={`max-w-xs rounded mt-2 cursor-pointer 
+                                  ${m.from === "user" ? "ml-auto" : "mr-auto"}`}
                               onClick={() => {
                                 setModalImage(m.image);
                                 setModalOpen(true);
@@ -436,10 +441,14 @@ export default function App() {
                           )}
                           {m.audio && (
                             <button
-                              className="mt-2 px-2 py-1 rounded bg-[rgba(255,255,255,0.03)]"
+                              className="px-3 py-2 rounded bg-gradient-to-br from-emerald-400 via-blue-500 to-purple-600"
                               onClick={() => handlePlayMessageAudio(m.audio, i)}
                             >
-                              {playingIndex === i ? "Pause" : "Play audio"}
+                              {playingIndex === i ? (
+                                <FaPause className="bg-gradient-to-br from-emerald-400 via-blue-500 to-purple-600" />
+                              ) : (
+                                <FaPlay className="text-white" />
+                              )}
                             </button>
                           )}
                         </div>
@@ -447,6 +456,14 @@ export default function App() {
                       {loading && (
                         <div className="flex justify-center py-4">
                           <BeatLoader size={8} />
+                        </div>
+                      )}
+                      {uploadingImage && (
+                        <div className="flex justify-center py-4">
+                          <BeatLoader size={10} />
+                          <span className="text-sm ml-2 text-gray-400">
+                            Uploading image...
+                          </span>
                         </div>
                       )}
                     </div>
@@ -462,6 +479,38 @@ export default function App() {
               <div className="bg-[rgba(255,255,255,0.02)] rounded-2xl px-3">
                 <div className="flex flex-col gap-3 ">
                   <div className="flex-1">
+                    {/* sample start */}
+
+                    {previewUrl && (
+                      <div className="relative w-20 h-20 rounded-md overflow-hidden bg-black/30 flex items-center justify-center mb-2 mt-2">
+                        {/* image preview */}
+                        <img
+                          src={previewUrl}
+                          className="object-cover w-full h-full opacity-90"
+                          alt="preview"
+                        />
+
+                        {/* loader on top */}
+                        {uploadPreviewLoading && (
+                          <div className="absolute inset-0 flex items-center justify-center bg-black/40">
+                            <span class="loader"></span>
+                          </div>
+                        )}
+
+                        {/* remove image button */}
+                        <button
+                          onClick={() => {
+                            setPreviewUrl("");
+                            setFileImage("");
+                          }}
+                          className="absolute -top-1 text-xl -right-1    rounded-full p-1"
+                        >
+                          <IoMdCloseCircle />
+                        </button>
+                      </div>
+                    )}
+
+                    {/* sample end  */}
                     <input
                       value={item}
                       onChange={(e) => setItem(e.target.value)}
@@ -508,68 +557,36 @@ export default function App() {
                 </div>
 
                 <div className="mt-3 flex items-center justify-between text-sm text-[color:var(--muted)]">
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 relative">
                     {/* File input popover */}
                     {showFileInput && (
-                      <div className="flex items-center gap-2 bg-[rgba(255,255,255,0.01)] p-2 rounded">
+                      <div className="absolute bottom-14 left-0 mb-2 bg-[#121213]  border border-white/10 p-3 rounded-lg z-50">
                         <input
                           type="file"
                           accept="image/*"
-                          onChange={(e) => {
+                          className="cursor-pointer"
+                          onChange={async (e) => {
                             const f = e.target.files[0];
-                            setFileImage(f);
-                            if (f) setPreviewUrl(URL.createObjectURL(f));
+                            if (!f) return;
+
+                            setPreviewUrl(URL.createObjectURL(f));
+                            setUploadPreviewLoading(true);
+
+                            try {
+                              const url = await uploadToCloudinary(f);
+                              setFileImage(url);
+                            } catch (err) {
+                              console.error("Upload Error:", err);
+                              setPreviewUrl("");
+                            } finally {
+                              setUploadPreviewLoading(false);
+                            }
                           }}
-                          className="text-[color:var(--muted)]"
                         />
-                        {fileImage && fileImage instanceof File ? (
-                          <>
-                            <button
-                              onClick={handleUploadClick}
-                              className="px-3 py-1 bg-green-600 text-white rounded"
-                            >
-                              Upload
-                            </button>
-                            <button
-                              onClick={() => {
-                                setFileImage("");
-                                setPreviewUrl("");
-                              }}
-                              className="px-3 py-1 bg-gray-600 text-white rounded"
-                            >
-                              Clear
-                            </button>
-                          </>
-                        ) : fileImage && typeof fileImage === "string" ? (
-                          <>
-                            <span className="px-3 py-1 bg-blue-600 text-white rounded">
-                              Uploaded
-                            </span>
-                            <button
-                              onClick={() => {
-                                setFileImage("");
-                                setPreviewUrl("");
-                              }}
-                              className="px-3 py-1 bg-gray-600 text-white rounded"
-                            >
-                              Remove
-                            </button>
-                          </>
-                        ) : null}
                       </div>
                     )}
                   </div>
                 </div>
-
-                {previewUrl && (
-                  <div className="mt-3">
-                    <img
-                      src={previewUrl}
-                      alt="preview"
-                      className="max-w-xs rounded"
-                    />
-                  </div>
-                )}
               </div>
             </div>
           </div>
