@@ -10,7 +10,7 @@ import SpeechRecognition, {
   useSpeechRecognition,
 } from "react-speech-recognition";
 import { BeatLoader } from "react-spinners";
-import { AudioLines, Paperclip } from "lucide-react";
+import { AudioLines, Paperclip, ArrowDownToLine, CircleX,Share2 } from "lucide-react";
 
 export default function App() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -406,10 +406,10 @@ export default function App() {
           {/* Scrollable Chat Content */}
           <div className="flex-1 overflow-y-auto px-4 py-0">
             <section className="max-w-5xl mx-auto ">
-              <div className="rounded-2xl sm:p-6 shadow-glass-lg sm: ">
+              <div className="rounded-2xl sm:px-6 shadow-glass-lg sm: ">
                 <div className="flex flex-col items-center text-center gap-6">
                   {/* Minimal display of messages */}
-                  <div className="w-full rounded-lg max-h-[110vh] overflow-y-auto">
+                  <div className="w-full rounded-lg max-h-[110vh]">
                     <div ref={chatRef} className="space-y-3">
                       {messages.length === 0 && <Card />}
                       {messages.map((m, i) => (
@@ -580,15 +580,17 @@ export default function App() {
                             setPreviewUrl(URL.createObjectURL(f));
                             setUploadPreviewLoading(true);
 
-                            try {
-                              const url = await uploadToCloudinary(f);
-                              setFileImage(url);
-                            } catch (err) {
-                              console.error("Upload Error:", err);
-                              setPreviewUrl("");
-                            } finally {
-                              setUploadPreviewLoading(false);
-                            }
+                            setTimeout(async () => {
+                              try {
+                                const url = await uploadToCloudinary(f);
+                                setFileImage(url);
+                              } catch (err) {
+                                console.error(err);
+                                setPreviewUrl("");
+                              } finally {
+                                setUploadPreviewLoading(false);
+                              }
+                            }, 150);
                           }}
                         />
                       </div>
@@ -645,9 +647,9 @@ export default function App() {
                     console.error("Download failed:", err);
                   }
                 }}
-                className="bg-white px-3 py-2 rounded-md shadow text-sm"
+                className="bg-black/70 px-3 py-2 rounded-md shadow text-sm"
               >
-                Download
+                <ArrowDownToLine />
               </button>
 
               <button
@@ -668,16 +670,16 @@ export default function App() {
                     console.error("Share failed:", err);
                   }
                 }}
-                className="bg-white px-3 py-2 rounded-md shadow text-sm"
+                className="bg-black/70 px-3 py-2 rounded-md shadow text-sm"
               >
-                Share
+                <Share2 />
               </button>
 
               <button
                 onClick={() => setModalOpen(false)}
                 className="bg-red-500 text-white px-3 py-2 rounded-md shadow text-sm"
               >
-                Close
+                <CircleX />
               </button>
             </div>
           </div>
