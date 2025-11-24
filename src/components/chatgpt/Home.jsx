@@ -441,7 +441,7 @@ export default function App() {
                           )}
                           {m.audio && (
                             <button
-                              className="px-3 py-2 rounded bg-gradient-to-br from-emerald-400 via-blue-500 to-purple-600"
+                              className="px-3 py-2 rounded bg-gradient-to-br from-emerald-400 via-blue-500 to-purple-600 cursor-pointer"
                               onClick={() => handlePlayMessageAudio(m.audio, i)}
                             >
                               {playingIndex === i ? (
@@ -455,7 +455,7 @@ export default function App() {
                       ))}
                       {waitingAudioResponse && (
                         <div className="flex justify-center py-4 items-center">
-                          <BeatLoader size={10} />
+                          <BeatLoader size={10} color="white" />
                           <span className="ml-3 text-sm text-gray-400">
                             Processing voice...
                           </span>
@@ -463,12 +463,12 @@ export default function App() {
                       )}
                       {loading && (
                         <div className="flex justify-center py-4 ">
-                          <BeatLoader size={8} />
+                          <BeatLoader size={8} color="white"/>
                         </div>
                       )}
                       {uploadingImage && (
                         <div className="flex justify-center py-4">
-                          <BeatLoader size={10} />
+                          <BeatLoader size={10} color="white"/>
                           <span className="text-sm ml-2 text-gray-400">
                             Uploading image...
                           </span>
@@ -539,14 +539,14 @@ export default function App() {
                         className="flex items-center gap-2   px-2 py-1 rounded-full text-sm whitespace-nowrap text-gray-900 dark:text-white"
                       >
                         {listening ? (
-                          <AudioLines className="w-6 h-6 bg-gradient-to-br from-emerald-400 via-blue-500 to-purple-600 text-gray-900 p-1 rounded-full" />
+                          <AudioLines className="w-6 h-6 bg-gradient-to-br from-emerald-400 via-blue-500 to-purple-600 text-gray-900 p-1 rounded-full cursor-pointer" />
                         ) : (
-                          <AudioLines className="w-6 h-6 bg-white text-gray-900 p-1 rounded-full" />
+                          <AudioLines className="w-6 h-6 bg-white text-gray-900 p-1 rounded-full cursor-pointer" />
                         )}
                       </button>
                       <button
                         onClick={() => setShowFileInput((s) => !s)}
-                        className="px-3 py-1 rounded-full bg-[rgba(255,255,255,0.03)] mr-2"
+                        className="px-3 py-1 rounded-full bg-[rgba(255,255,255,0.03)] mr-2 cursor-pointer"
                         title="Attach image"
                       >
                         <Paperclip size={16} />
@@ -647,7 +647,7 @@ export default function App() {
                     console.error("Download failed:", err);
                   }
                 }}
-                className="bg-black/70 px-3 py-2 rounded-md shadow text-sm"
+                className="bg-black/70 px-3 py-2 rounded-md shadow text-sm cursor-pointer"
               >
                 <ArrowDownToLine />
               </button>
@@ -670,14 +670,14 @@ export default function App() {
                     console.error("Share failed:", err);
                   }
                 }}
-                className="bg-black/70 px-3 py-2 rounded-md shadow text-sm"
+                className="bg-black/70 px-3 py-2 rounded-md shadow text-sm cursor-pointer"
               >
                 <Share2 />
               </button>
 
               <button
                 onClick={() => setModalOpen(false)}
-                className="bg-red-500 text-white px-3 py-2 rounded-md shadow text-sm"
+                className="bg-red-500 text-white px-3 py-2 rounded-md shadow text-sm cursor-pointer"
               >
                 <CircleX />
               </button>
